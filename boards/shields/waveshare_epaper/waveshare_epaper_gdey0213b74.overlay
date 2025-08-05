@@ -14,9 +14,10 @@
 
 	mipi_dbi_waveshare_epaper_gdey0213b74 {
 		compatible = "zephyr,mipi-dbi-spi";
-		spi-dev = <&arduino_spi>;
-		dc-gpios = <&arduino_header ARDUINO_HEADER_R3_D9 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&arduino_header ARDUINO_HEADER_R3_D8 GPIO_ACTIVE_LOW>;
+
+		spi-dev = <&spi2>;
+		dc-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;	/* D1 */
+		reset-gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;	/* D2 */
 		#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -26,7 +27,11 @@
 			reg = <0>;
 			width = <250>;
 			height = <122>;
+<<<<<<< HEAD
 			busy-gpios = <&arduino_header ARDUINO_HEADER_R3_D7 GPIO_ACTIVE_HIGH>;
+=======
+			busy-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;	/* D3 */
+>>>>>>> 7873b01524a (updates the overlay files with the required changes to be compatible with)
 
 			tssv = <0x80>;
 
