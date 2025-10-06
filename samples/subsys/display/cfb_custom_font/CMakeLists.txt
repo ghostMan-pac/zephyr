@@ -9,4 +9,6 @@ project(cfb_custom_font)
 target_sources(app PRIVATE src/main.c)
 
 set(gen_dir ${ZEPHYR_BINARY_DIR}/include/generated/)
-generate_cfb_font_for_target(app fonts/dice.png ${gen_dir}/cfb_font_dice.h 32 32 --first 49 --last 54)
+# generate_cfb_font_for_target(app fonts/dice.png ${gen_dir}/cfb_font_dice.h 64 64 --first 49 --last 54)
+generate_cfb_font_for_target(app fonts/mug.png ${gen_dir}/cfb_font_mug.h 128 128 --first 49 --last 54)
+generate_cfb_font_for_target(app fonts/co_text.png ${gen_dir}/cfb_font_co_text.h 64 64 --first 65 --last 70)

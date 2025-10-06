@@ -135,11 +135,11 @@ int main(void)
 		hello_world_label = lv_label_create(lv_screen_active());
 	}
 
-	lv_label_set_text(hello_world_label, "Hello world!");
-	lv_obj_align(hello_world_label, LV_ALIGN_CENTER, 0, 0);
+	// lv_label_set_text(hello_world_label, "Hello world!");
+	// lv_obj_align(hello_world_label, LV_ALIGN_CENTER, 0, 0);
 
 	count_label = lv_label_create(lv_screen_active());
-	lv_obj_align(count_label, LV_ALIGN_BOTTOM_MID, 0, 0);
+	lv_obj_align(count_label, LV_ALIGN_CENTER, 0, 0);
 
 	lv_timer_handler();
 	display_blanking_off(display_dev);
@@ -147,7 +147,8 @@ int main(void)
 	while (1) {
 		if ((count % 100) == 0U) {
 			sprintf(count_str, "%d", count/100U);
-			lv_label_set_text(count_label, count_str);
+			char count_str3[] = "hi ghostMan!!";
+			lv_label_set_text(count_label, count_str3);
 		}
 		lv_timer_handler();
 		++count;

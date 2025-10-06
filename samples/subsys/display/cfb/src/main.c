@@ -9,6 +9,45 @@
 #include <zephyr/display/cfb.h>
 #include <stdio.h>
 
+typedef enum{
+	CMD_TYPE_1 = 0,
+	CMD_TYPE_2,
+	CMD_TYPE_3,
+	CMD_TYPE_4,
+	CMD_TYPE_MAX,
+} cmd_type_t;
+
+typedef enum{
+	RET_FAILED=-1,
+	RET_SUCCESS=0,
+} ret_type_t;
+
+static int get_the_status(uint8_t msg_type, char* status){
+	int ret_status = RET_FAILED;
+	int len = 0;
+	switch (msg_type) {
+		case 0:
+			sprintf(status, "Available");
+			break;
+		case 1:
+			sprintf(status, "Do Not Disturb");
+			break;
+		case 2:
+			sprintf(status, "Gone 4 Coffee");
+			break;
+		case 3:
+			sprintf(status, "In a Meeting");
+			break;
+		case 4:
+			sprintf(status, "Out of Office");
+			break;
+		default:
+			ret_status = RET_FAILED;
+			break;
+	}
+	return ret_status;
+}
+
 int main(void)
 {
 	const struct device *dev;
@@ -54,35 +93,43 @@ int main(void)
 		}
 		cfb_framebuffer_set_font(dev, idx);
 		printf("font width %d, font height %d\n",
-		       font_width, font_height);
+	 font_width, font_height);
 	}
 
 	printf("x_res %d, y_res %d, ppt %d, rows %d, cols %d\n",
-	       x_res,
-	       y_res,
-	       ppt,
-	       rows,
-	       cfb_get_display_parameter(dev, CFB_DISPLAY_COLS));
+	x_res,
+	y_res,
+	ppt,
+	rows,
+	cfb_get_display_parameter(dev, CFB_DISPLAY_COLS));
 
 	cfb_framebuffer_invert(dev);
 
 	cfb_set_kerning(dev, 3);
-
+	// used to denote the different types of message type
+	uint8_t cmd_type = 0;
+	
+	char *status = (char *)k_calloc(50, 1);
 	while (1) {
-		for (int i = 0; i < MIN(x_res, y_res); i++) {
-			cfb_framebuffer_clear(dev, false);
-			if (cfb_print(dev,
-				      "0123456789mMgj!\"§$%&/()=",
-				      i, i)) {
-				printf("Failed to print a string\n");
-				continue;
-			}
+		/*find the status that is to be printed as per the cmd_type*/
+		cfb_framebuffer_set_font(dev, 1);
 
-			cfb_framebuffer_finalize(dev);
-#if defined(CONFIG_ARCH_POSIX)
-			k_sleep(K_MSEC(20));
-#endif
+		get_the_status(cmd_type, status);
+
+		cfb_framebuffer_clear(dev, false);
+		if (cfb_print(dev,
+		status,
+		0, 45)) {
+			printf("Failed to print a string\n");
 		}
+
+		k_msleep(1000);
+		cmd_type++;
+		if(cmd_type>CMD_TYPE_MAX){
+
+			cmd_type = 0;
+		}
+		cfb_framebuffer_finalize(dev);
 	}
 	return 0;
 }

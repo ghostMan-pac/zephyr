@@ -24,6 +24,7 @@
 		i2c-0 = &i2c0;
 		watchdog0 = &wdt0;
 		led0 = &led0;
+		sw0 = &button0;
 	};
 
 	leds {
@@ -34,6 +35,23 @@
 			label = "BUILTIN LED";
 		};
 	};
+
+
+	buttons {
+		compatible = "gpio-keys";
+		button0: button_0 {
+			gpios = <&gpio0 6 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			label = "SW0";
+			// zephyr,code = <INPUT_KEY_0>;
+		};
+
+		button1: button_1 {
+			gpios = <&gpio0 43 GPIO_PULL_DOWN>;
+			label = "SW1";
+			// zephyr,code = <INPUT_KEY_1>;
+		};
+	};
+
 };
 
 &usb_serial {

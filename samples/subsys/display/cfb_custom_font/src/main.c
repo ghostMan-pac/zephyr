@@ -9,8 +9,9 @@
 #include <zephyr/display/cfb.h>
 #include <zephyr/sys/printk.h>
 
-#include "cfb_font_dice.h"
-
+// #include "cfb_font_dice.h"
+#include "cfb_font_mug.h"
+#include "cfb_font_co_text.h"
 int main(void)
 {
 	const struct device *const display = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
@@ -20,8 +21,8 @@ int main(void)
 		printk("Display device not ready\n");
 	}
 
-	if (display_set_pixel_format(display, PIXEL_FORMAT_MONO10) != 0) {
-		if (display_set_pixel_format(display, PIXEL_FORMAT_MONO01) != 0) {
+	if (display_set_pixel_format(display, PIXEL_FORMAT_MONO01) != 0) {
+		if (display_set_pixel_format(display, PIXEL_FORMAT_MONO10) != 0) {
 			printk("Failed to set required pixel format");
 			return 0;
 		}
@@ -44,12 +45,10 @@ int main(void)
 	if (err) {
 		printk("Could not clear framebuffer (err %d)\n", err);
 	}
-
 	err = cfb_print(display, "123456", 0, 0);
 	if (err) {
 		printk("Could not display custom font (err %d)\n", err);
 	}
-
 	err = cfb_framebuffer_finalize(display);
 	if (err) {
 		printk("Could not finalize framebuffer (err %d)\n", err);
