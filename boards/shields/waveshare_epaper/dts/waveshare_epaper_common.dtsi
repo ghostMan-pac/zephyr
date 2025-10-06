@@ -7,7 +7,7 @@
 
 &spi2 {
 	status = "okay";
-	cs-gpios = <&gpio0 1 GPIO_ACTIVE_LOW>;	/* D0 */
+	cs-gpios = <&gpio0 20 GPIO_ACTIVE_LOW>;	/* D0 */
 
 	waveshare_epaper_sdhc: sdhc@1 {
 		compatible = "zephyr,sdhc-spi-slot";

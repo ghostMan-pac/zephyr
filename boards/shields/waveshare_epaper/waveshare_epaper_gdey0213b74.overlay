@@ -16,8 +16,8 @@
 		compatible = "zephyr,mipi-dbi-spi";
 
 		spi-dev = <&spi2>;
-		dc-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;	/* D1 */
-		reset-gpios = <&gpio0 3 GPIO_ACTIVE_LOW>;	/* D2 */
+		dc-gpios = <&gpio0 19 GPIO_ACTIVE_HIGH>;	/* D19 */
+		reset-gpios = <&gpio0 18 GPIO_ACTIVE_LOW>;	/* D18 */
 		#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -27,11 +27,8 @@
 			reg = <0>;
 			width = <250>;
 			height = <122>;
-<<<<<<< HEAD
-			busy-gpios = <&arduino_header ARDUINO_HEADER_R3_D7 GPIO_ACTIVE_HIGH>;
-=======
-			busy-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;	/* D3 */
->>>>>>> 7873b01524a (updates the overlay files with the required changes to be compatible with)
+
+			busy-gpios = <&gpio0 15 GPIO_ACTIVE_HIGH>;	/* D15 */
 
 			tssv = <0x80>;
 
