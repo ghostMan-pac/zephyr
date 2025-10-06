@@ -8,6 +8,7 @@
 #include <zephyr/device.h>
 #include <zephyr/display/cfb.h>
 #include <stdio.h>
+#include <zephyr/drivers/gpio.h>
 
 typedef enum{
 	CMD_TYPE_1 = 0,
@@ -47,6 +48,19 @@ static int get_the_status(uint8_t msg_type, char* status){
 	}
 	return ret_status;
 }
+	volatile uint8_t cmd_type = 0;
+	volatile bool update_enable = true;
+
+#define SW0_NODE DT_ALIAS(sw0)
+	static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
+	void button_pressed(const struct device *dev, struct gpio_callback *cb, uint32_t pins)
+	{
+		printk("Button pressed at %" PRIu32 "\n", k_cycle_get_32());
+		cmd_type++;
+	
+		update_enable = true;
+}
+static struct gpio_callback button_cb_data;
 
 int main(void)
 {
@@ -63,6 +77,31 @@ int main(void)
 		printf("Device %s not ready\n", dev->name);
 		return 0;
 	}
+	
+	if (!gpio_is_ready_dt(&button)) {
+		printk("Error: button device %s is not ready\n",
+		       button.port->name);
+		return 0;
+	}
+
+	int ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
+	if (ret != 0) {
+		printk("Error %d: failed to configure %s pin %d\n",
+		       ret, button.port->name, button.pin);
+		return 0;
+	}
+
+	ret = gpio_pin_interrupt_configure_dt(&button,
+					      GPIO_INT_EDGE_TO_ACTIVE);
+	if (ret != 0) {
+		printk("Error %d: failed to configure interrupt on %s pin %d\n",
+			ret, button.port->name, button.pin);
+		return 0;
+	}
+
+	gpio_init_callback(&button_cb_data, button_pressed, BIT(button.pin));
+	gpio_add_callback(button.port, &button_cb_data);
+
 
 	if (display_set_pixel_format(dev, PIXEL_FORMAT_MONO10) != 0) {
 		if (display_set_pixel_format(dev, PIXEL_FORMAT_MONO01) != 0) {
@@ -107,29 +146,27 @@ int main(void)
 
 	cfb_set_kerning(dev, 3);
 	// used to denote the different types of message type
-	uint8_t cmd_type = 0;
 	
 	char *status = (char *)k_calloc(50, 1);
 	while (1) {
-		/*find the status that is to be printed as per the cmd_type*/
-		cfb_framebuffer_set_font(dev, 1);
+		if(update_enable == true){
+			/*find the status that is to be printed as per the cmd_type*/
+			cfb_framebuffer_set_font(dev, 1);
 
-		get_the_status(cmd_type, status);
+			get_the_status(cmd_type, status);
 
-		cfb_framebuffer_clear(dev, false);
-		if (cfb_print(dev,
-		status,
-		0, 45)) {
-			printf("Failed to print a string\n");
-		}
-
-		k_msleep(1000);
-		cmd_type++;
-		if(cmd_type>CMD_TYPE_MAX){
+			cfb_framebuffer_clear(dev, false);
+			if (cfb_print(dev, status, 0, 45)) {
+				printf("Failed to print a string\n");
+			}
+			cfb_framebuffer_finalize(dev);
+				
+			if(cmd_type>CMD_TYPE_MAX){
 
 			cmd_type = 0;
 		}
-		cfb_framebuffer_finalize(dev);
+			update_enable = false;
+		}
 	}
 	return 0;
 }
