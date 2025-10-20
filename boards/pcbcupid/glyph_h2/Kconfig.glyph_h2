@@ -1,0 +1,7 @@
+# Glyph-H2 board configuration
+
+# Copyright (c) 2025 PCB Cupid
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_GLYPH_H2
+	select SOC_ESP32_H2_MINI_H4
