@@ -1,0 +1,23 @@
+# Copyright (c) 2026 Muhammed Asif P
+# SPDX-License-Identifier: Apache-2.0
+
+title: Microchip Event System module
+
+description: |
+  Microchip Event system module group g1
+  todo://give more info regarding event system
+  also give ip version and id
+
+compatible: "microchip,evsys-g1"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+  interrupts:
+    required: true
+
+  clocks:
+    required: true
