@@ -13,7 +13,7 @@
 
 #define DT_DRV_COMPAT microchip_evsys_g1
 
-LOG_MODULE_REGISTER(mchp_evsys_g1, CONFIG_MCHP_EVSYS_G1_LOG_LEVEL);
+LOG_MODULE_REGISTER(mchp_evsys_g1, CONFIG_MCHP_EVSYS_LOG_LEVEL);
 
 struct evsys_mchp_clock {
 	const struct device *clk_dev;
@@ -65,17 +65,49 @@ static int evsys_mchp_init(const struct device *dev)
 	return 0;
 }
 
-/* connect channel to generator */
-int evsys_mchp_connect_channel_to_evgen(int channel_num, int ev_gen)
+int evsys_mchp_request_channel(const struct device *dev, uint8_t *channel_num)
 {
+	/* Request for channel. and provide the non-assigned channels to the requestor
+	 * If no channel available return -EBUSY*/
+	LOG_ERR("called %s", __func__);
+
+	channel_num = 0;
+	return 0;
+}
+
+/* connect channel to generator */
+int evsys_mchp_connect_channel_to_evgen(const struct device *dev, uint8_t channel_num, int ev_gen)
+{
+	const struct evsys_mchp_config *config = dev->config;
+	evsys_registers_t *regs = config->regs;
+
+	regs->CHANNEL[channel_num].EVSYS_CHANNEL =
+		EVSYS_CHANNEL_EVGEN(ev_gen) |
+		EVSYS_CHANNEL_PATH(EVSYS_CHANNEL_PATH_ASYNCHRONOUS_Val) |
+		EVSYS_CHANNEL_EDGSEL(EVSYS_CHANNEL_EDGSEL_NO_EVT_OUTPUT_Val);
+
+	LOG_ERR("called %s", __func__);
 	// check whether channel busy?
 	// check whether event generator connected?
 	// connect evgen to channel
 }
 
 /* connect channel to users*/
-int evsys_mchp_connect_user_to_channel(int user, int channel)
+int evsys_mchp_connect_user_to_channel(const struct device *dev, uint8_t channel_num,
+				       int user_offset)
 {
+	const struct evsys_mchp_config *config = dev->config;
+	evsys_registers_t *regs = config->regs;
+	int user_idx;
+
+	/* reverse calculated based on the register offset from the datasheet */
+	user_idx = (user_offset - EVSYS_USER_REG_OFST) / 4;
+	if (user_idx < 66) {
+		regs->EVSYS_USER[user_index] = EVSYS_USER_CHANNEL(channel_num + 1);
+	} else {
+		return -EINVAL;
+	}
+	LOG_ERR("called %s user_idx = %d", __func__, user_idx);
 	// check whether channel has generator?
 	// connect channel number to user
 }
