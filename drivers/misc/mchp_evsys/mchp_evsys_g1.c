@@ -43,11 +43,41 @@ static int evsys_mchp_init(const struct device *dev)
 {
 	const struct evsys_mchp_config *config = dev->config;
 	struct evsys_mchp_data *data = dev->data;
+	evsys_registers_t *regs = config->regs;
+	int ret_val;
 
 	k_mutex_init(&data->lock);
+	/* turn on the mclk*/
+	ret_val = clock_control_on(config->evsys_clock.clk_dev, (config->evsys_clock.clk_mclk));
+	LOG_ERR("mclock on retval = %d", ret_val);
+	/* turn on all the gclock. could decide later on whether to turn on only if required by
+	 * respective peripherals*/
+	for (int i = 0; i < EVSYS_SYNCH_NUM; i++) {
+		ret_val = clock_control_on(config->evsys_clock.clk_dev,
+					   (config->evsys_clock.clk_gclk[i]));
+		LOG_ERR("gclock[%d] on retval = %d", i, ret_val);
+	}
+	// need to remove if not working.this guy is supposed to be
+	// called only after disabling all other event generators
+	regs->EVSYS_CTRLA = EVSYS_CTRLA_SWRST_Msk;
 	config->irq_config_func(dev);
 
 	return 0;
+}
+
+/* connect channel to generator */
+int evsys_mchp_connect_channel_to_evgen(int channel_num, int ev_gen)
+{
+	// check whether channel busy?
+	// check whether event generator connected?
+	// connect evgen to channel
+}
+
+/* connect channel to users*/
+int evsys_mchp_connect_user_to_channel(int user, int channel)
+{
+	// check whether channel has generator?
+	// connect channel number to user
 }
 
 // void nxp_flexio_lock(const struct device *dev)
