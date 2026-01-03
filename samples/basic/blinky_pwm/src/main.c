@@ -13,9 +13,10 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/misc/mchp_evsys/mchp_evsys_g1.h>
 
 static const struct pwm_dt_spec pwm_led0 = PWM_DT_SPEC_GET(DT_ALIAS(pwm_led0));
-
+const struct device *evsys_dev = DEVICE_DT_GET(DT_ALIAS(evsys0));
 #define MIN_PERIOD PWM_SEC(1U) / 128U
 #define MAX_PERIOD PWM_SEC(1U)
 
@@ -29,8 +30,7 @@ int main(void)
 	printk("PWM-based blinky\n");
 
 	if (!pwm_is_ready_dt(&pwm_led0)) {
-		printk("Error: PWM device %s is not ready\n",
-		       pwm_led0.dev->name);
+		printk("Error: PWM device %s is not ready\n", pwm_led0.dev->name);
 		return 0;
 	}
 
@@ -53,28 +53,22 @@ int main(void)
 		}
 	}
 
-	printk("Done calibrating; maximum/minimum periods %u/%lu nsec\n",
-	       max_period, MIN_PERIOD);
+	printk("Done calibrating; maximum/minimum periods %u/%lu nsec\n", max_period, MIN_PERIOD);
 
 	period = max_period;
+	ret = pwm_set_dt(&pwm_led0, period, period / 2U);
+	if (ret) {
+		printk("Error %d: failed to set pulse width\n", ret);
+		return 0;
+	}
+	uint8_t channel_num = 1;//channel number should be requested in pilkaalam
+	evsys_mchp_connect_user_to_channel( evsys_dev, channel_num, EVSYS_MCHP_EVUSER_TC1_EVU);
+	evsys_mchp_connect_channel_to_evgen(evsys_dev, channel_num, EVSYS_MCHP_EVGEN_EIC_EXTINT4);
+	
 	while (1) {
-		ret = pwm_set_dt(&pwm_led0, period, period / 2U);
-		if (ret) {
-			printk("Error %d: failed to set pulse width\n", ret);
-			return 0;
-		}
 		printk("Using period %d\n", period);
-
-		period = dir ? (period * 2U) : (period / 2U);
-		if (period > max_period) {
-			period = max_period / 2U;
-			dir = 0U;
-		} else if (period < MIN_PERIOD) {
-			period = MIN_PERIOD * 2U;
-			dir = 1U;
-		}
-
 		k_sleep(K_SECONDS(4U));
 	}
 	return 0;
 }
+
