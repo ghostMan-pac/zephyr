@@ -7,6 +7,7 @@
 #include <arm/armv7-m.dtsi>
 #include <zephyr/dt-bindings/gpio/gpio.h>
 #include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/misc/mchp_evsys_g1.h>
 #include <zephyr/dt-bindings/clock/mchp_sam_d5x_e5x_clock.h>
 
 / {
@@ -271,8 +272,10 @@
 		evsys: evsys@4100e000{
 			compatible = "microchip,evsys-g1";
 			reg = <0x4100e000 0x2000>;
-			interrupts = <36 0>, <37 0>, <38 0>, <39 0>, <40 0>;
-			interrupt-names = "evd0_ovr0", "evd1_ovr1","evd2_ovr2","evd3_ovr3","evd4_11_ovr4_11";
+			interrupts = <36 0>, <37 0>, <38 0>,
+				     <39 0>, <40 0>;
+			interrupt-names = "evd0_ovr0", "evd1_ovr1", "evd2_ovr2",
+					  "evd3_ovr3", "evd4_11_ovr4_11";
 			clocks = <&mclkperiph CLOCK_MCHP_MCLKPERIPH_ID_APBB_EVSYS>,
 				 <&gclkperiph CLOCK_MCHP_GCLKPERIPH_ID_EVSYS0>,
 				 <&gclkperiph CLOCK_MCHP_GCLKPERIPH_ID_EVSYS1>,
