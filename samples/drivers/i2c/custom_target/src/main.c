@@ -1,100 +1,88 @@
-/*
- * Copyright (c) 2024 Open Pixel Systems
- *
- * SPDX-License-Identifier: Apache-2.0
+/*																								*/
+/* Copyright (c) 2020 Nordic Semiconductor ASA
  */
-
-#include <zephyr/kernel.h>
-#include <zephyr/sys/printk.h>
-#include <zephyr/drivers/i2c.h>
-
-static const struct device *bus = DEVICE_DT_GET(DT_NODELABEL(flexcomm4));
-static char last_byte;
-
-/*
- * @brief Callback which is called when a write request is received from the master.
- * @param config Pointer to the target configuration.
+/*																								*/
+/* SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
-int sample_target_write_requested_cb(struct i2c_target_config *config)
-{
-	printk("sample target write requested\n");
-	return 0;
-}
+#include <zephyr.h>
+#include <sys/printk.h>
+#include <drivers/i2c.h>
 
-/*
- * @brief Callback which is called when a write is received from the master.
- * @param config Pointer to the target configuration.
- * @param val The byte received from the master.
+/* Check if devicetree node identifier with the alias "my-i2c" is defined
  */
-int sample_target_write_received_cb(struct i2c_target_config *config, uint8_t val)
+/* If not defined use the default defined node for the arduino_i2c pins on the development kit 	*/
+#if DT_NODE_HAS_STATUS(DT_ALIAS(my_i2c), okay)
+#define I2C_NODE DT_ALIAS(my_i2c)
+#define I2C_DEV  DT_LABEL(I2C_NODE)
+#else
+#define I2C_NODE DT_NODELABEL(arduino_i2c)
+#if DT_NODE_HAS_STATUS(I2C_NODE, okay)
+#define I2C_DEV DT_LABEL(I2C_NODE)
+#else
+#error "Arduino_i2c not defined, specify the I2C bus to use with the alias "my-i2c""
+#define I2C_DEV ""
+#endif
+#endif
+
+void main(void)
 {
-	printk("sample target write received: 0x%02x\n", val);
-	last_byte = val;
-	return 0;
-}
+	const struct device *i2c_dev;
 
-/*
- * @brief Callback which is called when a read request is received from the master.
- * @param config Pointer to the target configuration.
- * @param val Pointer to the byte to be sent to the master.
- */
-int sample_target_read_requested_cb(struct i2c_target_config *config, uint8_t *val)
-{
-	printk("sample target read request: 0x%02x\n", *val);
-	*val = 0x42;
-	return 0;
-}
+	k_sleep(K_SECONDS(1));
+	printk("*** I2C scanner started.                    ***\nBoard name      : %s\n",
+	       CONFIG_BOARD);
 
-/*
- * @brief Callback which is called when a read is processed from the master.
- * @param config Pointer to the target configuration.
- * @param val Pointer to the next byte to be sent to the master.
- */
-int sample_target_read_processed_cb(struct i2c_target_config *config, uint8_t *val)
-{
-	printk("sample target read processed: 0x%02x\n", *val);
-	*val = 0x43;
-	return 0;
-}
-
-/*
- * @brief Callback which is called when the master sends a stop condition.
- * @param config Pointer to the target configuration.
- */
-int sample_target_stop_cb(struct i2c_target_config *config)
-{
-	printk("sample target stop callback\n");
-	return 0;
-}
-
-static struct i2c_target_callbacks sample_target_callbacks = {
-	.write_requested = sample_target_write_requested_cb,
-	.write_received = sample_target_write_received_cb,
-	.read_requested = sample_target_read_requested_cb,
-	.read_processed = sample_target_read_processed_cb,
-	.stop = sample_target_stop_cb,
-};
-
-int main(void)
-{
-	struct i2c_target_config target_cfg = {
-		.address = 0x60,
-		.callbacks = &sample_target_callbacks,
-	};
-
-	printk("i2c custom target sample\n");
-
-	if (i2c_target_register(bus, &target_cfg) < 0) {
-		printk("Failed to register target\n");
-		return -1;
+	i2c_dev = device_get_binding(I2C_DEV);
+	if (!i2c_dev) {
+		printk("I2C: Device driver not found.\n");
+		return;
 	}
 
-	k_msleep(5000);
+	printk("I2C Port        : %s \n", I2C_DEV);
+	printk("Clock Frequency : %d \n", DT_PROP(I2C_NODE, clock_frequency));
 
-	if (i2c_target_unregister(bus, &target_cfg) < 0) {
-		printk("Failed to unregister target\n");
-		return -1;
+#ifndef CONFIG_PINCTRL_NRF
+	// From NCS2.0.0 pin-control is used, not possible to read out the used pins from I2C_NODE
+	printk("SDA-PIN         : %d \n", DT_PROP(I2C_NODE, sda_pin));
+	printk("SCL-PIN         : %d \n", DT_PROP(I2C_NODE, scl_pin));
+#endif
+
+	printk("\n    | 0x00 0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08 0x09 0x0a 0x0b 0x0c 0x0d 0x0e "
+	       "0x0f |\n");
+	printk("----|------------------------------------------------------------------------------"
+	       "---");
+
+	uint8_t error = 0u;
+	uint8_t dst;
+	uint8_t i2c_dev_cnt = 0;
+	struct i2c_msg msgs[1];
+	msgs[0].buf = &dst;
+	msgs[0].len = 1U;
+	msgs[0].flags = I2C_MSG_WRITE | I2C_MSG_STOP;
+
+	/* Use the full range of I2C address for display purpose */
+	for (uint16_t x = 0; x <= 0x7f; x++) {
+		/* New line every 0x10 address */
+		if (x % 0x10 == 0) {
+			printk("|\n0x%02x| ", x);
+		}
+		/* Range the test with the start and stop value configured in the kconfig */
+		if (x >= CONFIG_I2C_SCAN_ADDR_START && x <= CONFIG_I2C_SCAN_ADDR_STOP) {
+			/* Send the address to read from */
+			error = i2c_transfer(i2c_dev, &msgs[0], 1, x);
+			/* I2C device found on current address */
+			if (error == 0) {
+				printk("0x%02x ", x);
+				i2c_dev_cnt++;
+			} else {
+				printk(" --  ");
+			}
+		} else {
+			/* Scan value out of range, not scanned */
+			printk("     ");
+		}
 	}
-
-	return 0;
+	printk("|\n");
+	printk("\nI2C device(s) found on the bus: %d\nScanning done.\n\n", i2c_dev_cnt);
+	printk("Find the registered I2C address on: https://i2cdevices.org/addresses\n\n");
 }
