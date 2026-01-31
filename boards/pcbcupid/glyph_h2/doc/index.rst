@@ -3,7 +3,7 @@
 Overview
 ********
 
-ESP32-H2-DevKitM-1 is an entry-level development board based on the ESP32-H2-MINI-1 module,
+Glyph-H2 is an entry-level development board based on the ESP32-H2-MINI-1 module,
 which integrates Bluetooth® Low Energy (LE) and IEEE 802.15.4 connectivity. It features
 the ESP32-H2 SoC — a 32-bit RISC-V core designed for low-power, secure wireless communication,
 supporting Bluetooth 5 (LE), Bluetooth Mesh, Thread, Matter, and Zigbee protocols.
@@ -17,13 +17,9 @@ Hardware
 ESP32-H2 combines IEEE 802.15.4 connectivity with Bluetooth 5 (LE). The SoC is powered by
 a single-core, 32-bit RISC-V microcontroller that can be clocked up to 96 MHz. The ESP32-H2 has
 been designed to ensure low power consumption and security for connected devices. ESP32-H2 has
-320 KB of SRAM with 16 KB of Cache, 128 KB of ROM, 4 KB LP of memory, and a built-in 2 MB or 4 MB
+320 KB of SRAM with 16 KB of Cache, 128 KB of ROM, 4 KB LP of memory, and a built-in 4 MB
 SiP flash. It has 19 programmable GPIOs with support for ADC, SPI, UART, I2C, I2S, RMT, GDMA
 and LED PWM.
-
-Most of ESP32-H2-DevKitM-1's I/O pins are broken out to the pin headers on both sides for easy
-interfacing. Developers can either connect peripherals with jumper wires or mount the board
-on a breadboard.
 
 ESP32-H2 main features:
 
@@ -33,7 +29,6 @@ ESP32-H2 main features:
 - Bluetooth LE: Bluetooth 5.3 certified
 - IEEE 802.15.4 (Zigbee and Thread)
 - 19 programmable GPIOs
-- Numerous peripherals (details below)
 
 Digital interfaces:
 
@@ -119,6 +114,6 @@ References
 
 .. target-notes::
 
-.. _`ESP32-H2-DevKitM-1`: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32h2/esp32-h2-devkitm-1/user_guide.html
+.. _`Glyph-H2`: https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32h2/esp32-h2-devkitm-1/user_guide.html
 .. _`ESP32-H2 Datasheet`: https://www.espressif.com/sites/default/files/documentation/esp32-h2_datasheet_en.pdf
 .. _`ESP32-H2 Technical Reference Manual`: https://www.espressif.com/sites/default/files/documentation/esp32-h2_technical_reference_manual_en.pdf
