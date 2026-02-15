@@ -46,6 +46,7 @@ _names = [
     'mdb',
     'minichlink',
     'misc',
+    'mplab_ipe',
     'native',
     'nrfjprog',
     'nrfutil',
