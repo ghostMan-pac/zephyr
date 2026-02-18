@@ -25,5 +25,6 @@
 		segment-remap;
 		com-invdir;
 		prechargep = <0x22>;
+		inversion-on;
 	};
 };
