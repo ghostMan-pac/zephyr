@@ -24,14 +24,19 @@
 		i2c-0 = &i2c0;
 		watchdog0 = &wdt0;
 		led0 = &led0;
+		led1 = &led1;
 	};
 
 	leds {
 		compatible = "gpio-leds";
 
 		led0: led_0 {
-			gpios = <&gpio0 21 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio0 0 GPIO_ACTIVE_LOW>;
 			label = "BUILTIN LED";
+		};
+		led1: led_1 {
+			gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+			label = "BUILTIN asLED";
 		};
 	};
 };
