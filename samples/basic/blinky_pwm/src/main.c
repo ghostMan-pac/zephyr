@@ -13,10 +13,15 @@
 #include <zephyr/sys/printk.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/misc/mchp_evsys/mchp_evsys_g1.h>
+
+#define SW0_NODE DT_ALIAS(sw0)
 
 static const struct pwm_dt_spec pwm_led0 = PWM_DT_SPEC_GET(DT_ALIAS(pwm_led0));
 const struct device *evsys_dev = DEVICE_DT_GET(DT_ALIAS(evsys0));
+static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET_OR(SW0_NODE, gpios, {0});
+
 #define MIN_PERIOD PWM_SEC(1U) / 128U
 #define MAX_PERIOD PWM_SEC(1U)
 
@@ -26,6 +31,25 @@ int main(void)
 	uint32_t period;
 	uint8_t dir = 0U;
 	int ret;
+
+	if (!gpio_is_ready_dt(&button)) {
+		printk("Error: button device %s is not ready\n", button.port->name);
+		return 0;
+	}
+
+	ret = gpio_pin_configure_dt(&button, GPIO_INPUT);
+	if (ret != 0) {
+		printk("Error %d: failed to configure %s pin %d\n", ret, button.port->name,
+		       button.pin);
+		return 0;
+	}
+
+	ret = gpio_pin_interrupt_configure_dt(&button, GPIO_INT_EDGE_TO_ACTIVE);
+	if (ret != 0) {
+		printk("Error %d: failed to configure interrupt on %s pin %d\n", ret,
+		       button.port->name, button.pin);
+		return 0;
+	}
 
 	printk("PWM-based blinky\n");
 
@@ -61,14 +85,13 @@ int main(void)
 		printk("Error %d: failed to set pulse width\n", ret);
 		return 0;
 	}
-	uint8_t channel_num = 1;//channel number should be requested in pilkaalam
-	evsys_mchp_connect_user_to_channel( evsys_dev, channel_num, EVSYS_MCHP_EVUSER_TC1_EVU);
+	uint8_t channel_num = 1; // channel number should be requested in pilkaalam
+	evsys_mchp_connect_user_to_channel(evsys_dev, channel_num, EVSYS_MCHP_EVUSER_TC1_EVU);
 	evsys_mchp_connect_channel_to_evgen(evsys_dev, channel_num, EVSYS_MCHP_EVGEN_EIC_EXTINT4);
-	
+
 	while (1) {
 		printk("Using period %d\n", period);
 		k_sleep(K_SECONDS(4U));
 	}
 	return 0;
 }
-

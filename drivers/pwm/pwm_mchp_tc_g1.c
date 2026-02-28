@@ -718,6 +718,80 @@ static int pwm_mchp_get_cycles_per_sec(const struct device *pwm_dev, uint32_t ch
 	return MCHP_PWM_SUCCESS;
 }
 
+static DEVICE_API(pwm, pwm_mchp_api) = {
+	.set_cycles = pwm_mchp_set_cycles,
+	.get_cycles_per_sec = pwm_mchp_get_cycles_per_sec,
+};
+static int pwm_mchp_init(const struct device *pwm_dev);
+#define PWM_MCHP_DATA_DEFN(n) static struct pwm_mchp_data pwm_mchp_data_##n
+static void pwm_mchp_isr(const struct device *dev)
+{
+	const struct pwm_mchp_config *const mchp_pwm_cfg = dev->config;
+	void *pwm_reg = mchp_pwm_cfg->regs;
+	uint8_t int_flag = PWM_MODE16(pwm_reg)->TC_INTFLAG;
+
+	LOG_ERR("This is called 0x%x", int_flag);
+}
+/* clang-format off */
+#define PWM_MCHP_IRQ_CONNECT(pwm_int, inst)							\
+	IF_ENABLED(DT_INST_IRQ_HAS_IDX(inst, pwm_int), (					\
+	do {											\
+		IRQ_CONNECT(DT_INST_IRQ_BY_IDX(inst, pwm_int, irq),				\
+		DT_INST_IRQ_BY_IDX(inst, pwm_int, priority), pwm_mchp_isr,\
+			    DEVICE_DT_INST_GET(inst), inst);					\
+		irq_enable(DT_INST_IRQ_BY_IDX(inst, pwm_int, irq));				\
+	} while (false);									\
+			))
+
+#define PWM_MCHP_IRQ_HANDLER(n)					\
+	static void pwm_irq_connect_##n(void)			\
+	{                                                       \
+		/** Connect all IRQs for this instance */	\
+		LISTIFY(					\
+			DT_NUM_IRQS(DT_DRV_INST(n)),		\
+			PWM_MCHP_IRQ_CONNECT,			\
+			(),					\
+			n					\
+		)                                               \
+	}
+
+#define GET_THE_CLIENT_MCLOCK_IF_AVAILABLE(n)						\
+	COND_CODE_1(DT_INST_CLOCKS_HAS_NAME(n, client_mclk),				\
+	((void *)(DT_INST_CLOCKS_CELL_BY_NAME(n, client_mclk, subsystem))),		\
+	NULL)
+	
+#define PWM_MCHP_CLOCK_ASSIGN(n)							\
+.pwm_clock.clock_dev = DEVICE_DT_GET(DT_NODELABEL(clock)),			\
+	.pwm_clock.host_mclk = (void *)(DT_INST_CLOCKS_CELL_BY_NAME(n, mclk, subsystem)),\
+	.pwm_clock.host_gclk = (void *)DT_INST_CLOCKS_CELL_BY_NAME(n, gclk, subsystem),	\
+	.pwm_clock.client_mclk = GET_THE_CLIENT_MCLOCK_IF_AVAILABLE(n)
+
+	#define PWM_MCHP_CONFIG_DEFN(n)						\
+	static const struct pwm_mchp_config pwm_mchp_config_##n = {     \
+		.prescaler = DT_INST_PROP(n, prescaler),                \
+		.pinctrl_config = PINCTRL_DT_INST_DEV_CONFIG_GET(n),    \
+		.channels = DT_INST_PROP(n, channels),                  \
+		.regs = (void *)DT_INST_REG_ADDR(n),                    \
+		.max_bit_width = DT_INST_PROP(n, max_bit_width),        \
+		PWM_MCHP_CLOCK_ASSIGN(n)}
+		
+		#define PWM_MCHP_IRQ_HANDLER_DECL(n) static void pwm_irq_connect_##n(void)
+		
+		#define PWM_MCHP_DEVICE_DT_DEFN(n)								\
+		DEVICE_DT_INST_DEFINE(n, pwm_mchp_init, NULL, &pwm_mchp_data_##n, &pwm_mchp_config_##n,	\
+			      POST_KERNEL, CONFIG_PWM_INIT_PRIORITY, &pwm_mchp_api)
+
+#define PWM_MCHP_DEVICE_INIT(n)		\
+PINCTRL_DT_INST_DEFINE(n);	\
+	PWM_MCHP_IRQ_HANDLER_DECL(n);	\
+	PWM_MCHP_DATA_DEFN(n);          \
+	PWM_MCHP_CONFIG_DEFN(n);        \
+	PWM_MCHP_DEVICE_DT_DEFN(n);	\
+	PWM_MCHP_IRQ_HANDLER(n)
+
+/* clang-format on */
+DT_INST_FOREACH_STATUS_OKAY(PWM_MCHP_DEVICE_INIT)
+
 static int pwm_mchp_init(const struct device *pwm_dev)
 {
 	int ret_val;
@@ -764,49 +838,11 @@ static int pwm_mchp_init(const struct device *pwm_dev)
 		return ret_val;
 	}
 	ret_val = tc_init(mchp_pwm_cfg);
+	void *pwm_reg = mchp_pwm_cfg->regs;
+	pwm_irq_connect_0();
+	PWM_MODE16(pwm_reg)->TC_INTENCLR = 0XFF;
+	PWM_MODE16(pwm_reg)->TC_INTENSET = TC_INTENSET_MC1_Msk;
 	ret_val = (ret_val == -EALREADY) ? 0 : ret_val;
 
 	return ret_val;
 }
-
-static DEVICE_API(pwm, pwm_mchp_api) = {
-	.set_cycles = pwm_mchp_set_cycles,
-	.get_cycles_per_sec = pwm_mchp_get_cycles_per_sec,
-};
-
-#define PWM_MCHP_DATA_DEFN(n) static struct pwm_mchp_data pwm_mchp_data_##n
-
-/* clang-format off */
-#define GET_THE_CLIENT_MCLOCK_IF_AVAILABLE(n)						\
-	COND_CODE_1(DT_INST_CLOCKS_HAS_NAME(n, client_mclk),				\
-	((void *)(DT_INST_CLOCKS_CELL_BY_NAME(n, client_mclk, subsystem))),		\
-	NULL)
-
-#define PWM_MCHP_CLOCK_ASSIGN(n)							\
-	.pwm_clock.clock_dev = DEVICE_DT_GET(DT_NODELABEL(clock)),			\
-	.pwm_clock.host_mclk = (void *)(DT_INST_CLOCKS_CELL_BY_NAME(n, mclk, subsystem)),\
-	.pwm_clock.host_gclk = (void *)DT_INST_CLOCKS_CELL_BY_NAME(n, gclk, subsystem),	\
-	.pwm_clock.client_mclk = GET_THE_CLIENT_MCLOCK_IF_AVAILABLE(n)
-
-#define PWM_MCHP_CONFIG_DEFN(n)						\
-	static const struct pwm_mchp_config pwm_mchp_config_##n = {     \
-		.prescaler = DT_INST_PROP(n, prescaler),                \
-		.pinctrl_config = PINCTRL_DT_INST_DEV_CONFIG_GET(n),    \
-		.channels = DT_INST_PROP(n, channels),                  \
-		.regs = (void *)DT_INST_REG_ADDR(n),                    \
-		.max_bit_width = DT_INST_PROP(n, max_bit_width),        \
-		PWM_MCHP_CLOCK_ASSIGN(n)}
-
-
-#define PWM_MCHP_DEVICE_DT_DEFN(n)								\
-	DEVICE_DT_INST_DEFINE(n, pwm_mchp_init, NULL, &pwm_mchp_data_##n, &pwm_mchp_config_##n,	\
-			      POST_KERNEL, CONFIG_PWM_INIT_PRIORITY, &pwm_mchp_api)
-
-#define PWM_MCHP_DEVICE_INIT(n)		\
-	PINCTRL_DT_INST_DEFINE(n);	\
-	PWM_MCHP_DATA_DEFN(n);          \
-	PWM_MCHP_CONFIG_DEFN(n);        \
-	PWM_MCHP_DEVICE_DT_DEFN(n);
-
-/* clang-format on */
-DT_INST_FOREACH_STATUS_OKAY(PWM_MCHP_DEVICE_INIT)

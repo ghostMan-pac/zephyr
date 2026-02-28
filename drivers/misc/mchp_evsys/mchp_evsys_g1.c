@@ -102,12 +102,12 @@ int evsys_mchp_connect_user_to_channel(const struct device *dev, uint8_t channel
 
 	/* reverse calculated based on the register offset from the datasheet */
 	user_idx = (user_offset - EVSYS_USER_REG_OFST) / 4;
+	LOG_ERR("called %s user_idx = %d", __func__, user_idx);
 	if (user_idx < 66) {
-		regs->EVSYS_USER[user_index] = EVSYS_USER_CHANNEL(channel_num + 1);
+		regs->EVSYS_USER[user_idx] = EVSYS_USER_CHANNEL(channel_num + 1);
 	} else {
 		return -EINVAL;
 	}
-	LOG_ERR("called %s user_idx = %d", __func__, user_idx);
 	// check whether channel has generator?
 	// connect channel number to user
 }
