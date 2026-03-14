@@ -112,20 +112,6 @@ int evsys_mchp_connect_user_to_channel(const struct device *dev, uint8_t channel
 	// connect channel number to user
 }
 
-// void nxp_flexio_lock(const struct device *dev)
-// {
-// 	struct mcux_flexio_data *data = dev->data;
-
-// 	k_mutex_lock(&data->lock, K_FOREVER);
-// }
-
-// void nxp_flexio_unlock(const struct device *dev)
-// {
-// 	struct mcux_flexio_data *data = dev->data;
-
-// 	k_mutex_unlock(&data->lock);
-// }
-
 // todo: to use listify later
 /* clang-format off */
 #define EVSYS_MCHP_CLOCK_ASSIGN(n)                                                                 \

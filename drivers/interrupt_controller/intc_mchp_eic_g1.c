@@ -339,11 +339,14 @@ int eic_mchp_config_interrupt(struct eic_config_params *eic_pin_config)
 
 #endif /*CONFIG_SOC_FAMILY_MICROCHIP_PIC32CX_SG*/
 
+	EIC_REGS->EIC_ASYNCH = 0x8000U;
 	/* Set the debouncing feature of the eic line if required */
 	if (eic_pin_config->debounce != 0) {
 		eic_cfg->regs->EIC_DEBOUNCEN |= BIT(eic_line);
 	}
 	LOG_DBG("%s", eic_pin_config->debounce ? "debouncing enabled" : "debouncing disabled");
+	EIC_REGS->EIC_EVCTRL = 0x8000U;
+	EIC_REGS->EIC_DPRESCALER = EIC_DPRESCALER_PRESCALER0(0UL) | EIC_DPRESCALER_PRESCALER1(0UL);
 
 	enable_interrupt_line(eic_cfg->regs, eic_line);
 

@@ -80,7 +80,7 @@ int main(void)
 	printk("Done calibrating; maximum/minimum periods %u/%lu nsec\n", max_period, MIN_PERIOD);
 
 	period = max_period;
-	ret = pwm_set_dt(&pwm_led0, period, period / 2U);
+	ret = pwm_set_dt(&pwm_led0, period, period / 4U);
 	if (ret) {
 		printk("Error %d: failed to set pulse width\n", ret);
 		return 0;

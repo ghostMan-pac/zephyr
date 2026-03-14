@@ -19,7 +19,6 @@
 #include <zephyr/drivers/interrupt_controller/intc_mchp_eic_g1.h>
 
 LOG_MODULE_REGISTER(gpio_mchp_port_g1, CONFIG_GPIO_LOG_LEVEL);
-
 /******************************************************************************
  * @brief Devicetree definitions
  *****************************************************************************/
@@ -56,6 +55,11 @@ struct gpio_mchp_data {
 
 	/* Variable used for enabling or disabling debounce */
 	gpio_port_pins_t debounce;
+	/* Each port has atmost 4 input event pins. this variable is used to monitor and assign the
+	 * pins as per request.Each bit corresponds to each available pin
+	 */
+	uint8_t input_event_pin;
+	/* Variable used for enabling or disabling the event generator capability*/
 #ifdef CONFIG_INTC_MCHP_EIC_G1
 	/* provided by gpio_utils
 	 * callbacks are stored here for each pins
@@ -63,7 +67,16 @@ struct gpio_mchp_data {
 	sys_slist_t callbacks;
 #endif /*CONFIG_INTC_MCHP_EIC_G1*/
 };
-
+#ifdef CONFIG_MCHP_EVSYS_G1
+union gpio_evctrl_config {
+	struct {
+		uint8_t pin_num: 5;
+		uint8_t evact: 2;
+		uint8_t enable: 1;
+	} bits;
+	uint8_t val;
+};
+#endif /*CONFIG_MCHP_EVSYS_G1*/
 /******************************************************************************
  * @brief Helper functions
  *****************************************************************************/
@@ -310,6 +323,66 @@ static int gpio_configure_output(port_group_registers_t *gpio_reg, gpio_pin_t pi
 
 	return retval;
 }
+#ifdef CONFIG_MCHP_EVSYS_G1
+
+int gpio_evctrl_config(const struct device *dev, gpio_pin_t pin, gpio_flags_t flags)
+{
+	const struct gpio_mchp_config *config = dev->config;
+	port_group_registers_t *gpio_reg = config->gpio_regs;
+	struct gpio_mchp_data *data = dev->data;
+	uint8_t input_event_pin = data->input_event_pin;
+	union gpio_evctrl_config evctrl_cfg;
+	uint8_t free_event_pin;
+	uint32_t val32;
+	int ret_val = 0;
+
+	for (free_event_pin = 0; free_event_pin < PORT_EV_NUM; free_event_pin++) {
+		if ((input_event_pin & BIT(free_event_pin)) == 0) {
+			break;
+		}
+	}
+	if (free_event_pin >= PORT_EV_NUM) {
+		return -EBUSY;
+	}
+
+	evctrl_cfg.bits.enable = (uint8_t)true;
+	evctrl_cfg.bits.pin_num = pin;
+	flags &= GENMASK(6, 3);
+	printf("genmask = 0x%lx\n", GENMASK(6, 3));
+
+	switch (flags) {
+	case MCHP_GPIO_OUT_ON_EVENT:
+		evctrl_cfg.bits.evact = PORT_EVCTRL_EVACT0_OUT_Val;
+		break;
+	case MCHP_GPIO_SET_ON_EVENT:
+		evctrl_cfg.bits.evact = PORT_EVCTRL_EVACT0_SET_Val;
+		break;
+	case MCHP_GPIO_CLR_ON_EVENT:
+		evctrl_cfg.bits.evact = PORT_EVCTRL_EVACT0_CLR_Val;
+		break;
+	case MCHP_GPIO_TGL_ON_EVENT:
+		evctrl_cfg.bits.evact = PORT_EVCTRL_EVACT0_TGL_Val;
+		break;
+	default:
+		LOG_ERR("Unsupported/Invalid action");
+		ret_val = -ENOTSUP;
+		break;
+	}
+	if (ret_val < 0) {
+		return ret_val;
+	}
+	/*the multiplying and shifting is done so that the value of evctrl_cfg_val will be kept in
+	 * respective input event pin's location inside the 32 bit register
+	 */
+	val32 = gpio_reg->PORT_EVCTRL;
+	val32 &= ~(UINT8_MAX << (free_event_pin * 8));
+	val32 |= (evctrl_cfg.val << (free_event_pin * 8));
+	gpio_reg->PORT_EVCTRL = val32;
+	data->input_event_pin |= BIT(free_event_pin);
+	printf("evctrl val : 0x%x", evctrl_cfg.val);
+	return 0;
+}
+#endif /*CONFIG_MCHP_EVSYS_G1*/
 
 /******************************************************************************
  * @brief API functions
@@ -361,6 +434,15 @@ static int gpio_mchp_configure(const struct device *dev, gpio_pin_t pin, gpio_fl
 		retval = gpio_configure_input(gpio_reg, pin, flags);
 	} else if (flags & GPIO_OUTPUT) {
 		retval = gpio_configure_output(gpio_reg, pin, flags);
+#ifdef CONFIG_MCHP_EVSYS_G1
+		// todo: continue from here. there seems to be some issue for getting into the code
+		// here. probably something to do with the kconfig symbol
+		// after resolving this move onto the event generation part
+		if (flags & (MCHP_GPIO_SET_ON_EVENT | MCHP_GPIO_OUT_ON_EVENT |
+			     MCHP_GPIO_CLR_ON_EVENT | MCHP_GPIO_TGL_ON_EVENT)) {
+			retval = gpio_evctrl_config(dev, pin, flags);
+		}
+#endif /*CONFIG_MCHP_EVSYS_G1*/
 	} else {
 		/* Catch-all for unexpected flag combinations */
 		retval = -ENOTSUP;
@@ -596,7 +678,7 @@ static void gpio_mchp_callback(uint32_t pins, void *arg)
 
 static int gpio_mchp_pin_interrupt_configure(const struct device *dev, gpio_pin_t pin,
 					     enum gpio_int_mode mode, enum gpio_int_trig trig)
-{
+{ // todo: configure the event control generate event if selected
 	int ret_val = 0;
 	const struct gpio_mchp_config *gpio_config = dev->config;
 	struct gpio_mchp_data *gpio_data = dev->data;

@@ -730,7 +730,8 @@ static void pwm_mchp_isr(const struct device *dev)
 	void *pwm_reg = mchp_pwm_cfg->regs;
 	uint8_t int_flag = PWM_MODE16(pwm_reg)->TC_INTFLAG;
 
-	LOG_ERR("This is called 0x%x", int_flag);
+	LOG_ERR("This is called from inst %d 0x%x", (((int)pwm_reg - (int)0x40003800) / 0x400),
+		int_flag);
 }
 /* clang-format off */
 #define PWM_MCHP_IRQ_CONNECT(pwm_int, inst)							\
