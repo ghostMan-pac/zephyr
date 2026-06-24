@@ -19,7 +19,7 @@
 LOG_MODULE_REGISTER(main);
 
 /* Matches LFS_NAME_MAX */
-#define MAX_PATH_LEN 255
+#define MAX_PATH_LEN   255
 #define TEST_FILE_SIZE 547
 
 static uint8_t file_test_pattern[TEST_FILE_SIZE];
@@ -54,8 +54,7 @@ static int lsdir(const char *path)
 		if (entry.type == FS_DIR_ENTRY_DIR) {
 			LOG_PRINTK("[DIR ] %s\n", entry.name);
 		} else {
-			LOG_PRINTK("[FILE] %s (size = %zu)\n",
-				   entry.name, entry.size);
+			LOG_PRINTK("[FILE] %s (size = %zu)\n", entry.name, entry.size);
 		}
 	}
 
@@ -98,10 +97,9 @@ static int littlefs_increase_infile_value(char *fname)
 		goto out;
 	}
 
-	LOG_PRINTK("%s write new boot count %u: [wr:%d]\n", fname,
-		   boot_count, rc);
+	LOG_PRINTK("%s write new boot count %u: [wr:%d]\n", fname, boot_count, rc);
 
- out:
+out:
 	ret = fs_close(&file);
 	if (ret < 0) {
 		LOG_ERR("FAIL: close %s: %d", fname, ret);
@@ -148,12 +146,10 @@ static void print_pattern(uint8_t *p, uint16_t size)
 	int i, j = size / 16, k;
 
 	for (k = 0, i = 0; k < j; i += 16, k++) {
-		LOG_PRINTK("%02x %02x %02x %02x %02x %02x %02x %02x ",
-			   p[i], p[i+1], p[i+2], p[i+3],
-			   p[i+4], p[i+5], p[i+6], p[i+7]);
-		LOG_PRINTK("%02x %02x %02x %02x %02x %02x %02x %02x\n",
-			   p[i+8], p[i+9], p[i+10], p[i+11],
-			   p[i+12], p[i+13], p[i+14], p[i+15]);
+		LOG_PRINTK("%02x %02x %02x %02x %02x %02x %02x %02x ", p[i], p[i + 1], p[i + 2],
+			   p[i + 3], p[i + 4], p[i + 5], p[i + 6], p[i + 7]);
+		LOG_PRINTK("%02x %02x %02x %02x %02x %02x %02x %02x\n", p[i + 8], p[i + 9],
+			   p[i + 10], p[i + 11], p[i + 12], p[i + 13], p[i + 14], p[i + 15]);
 
 		/* Mark 512B (sector) chunks of the test file */
 		if ((k + 1) % 32 == 0) {
@@ -195,15 +191,12 @@ static int littlefs_binary_file_adj(char *fname)
 
 	/* Check if the file exists - if not just write the pattern */
 	if (rc == 0 && dirent.type == FS_DIR_ENTRY_FILE && dirent.size == 0) {
-		LOG_INF("Test file: %s not found, create one!",
-			fname);
+		LOG_INF("Test file: %s not found, create one!", fname);
 		init_pattern(file_test_pattern, sizeof(file_test_pattern));
 	} else {
-		rc = fs_read(&file, file_test_pattern,
-			     sizeof(file_test_pattern));
+		rc = fs_read(&file, file_test_pattern, sizeof(file_test_pattern));
 		if (rc < 0) {
-			LOG_ERR("FAIL: read %s: [rd:%d]",
-				fname, rc);
+			LOG_ERR("FAIL: read %s: [rd:%d]", fname, rc);
 			goto out;
 		}
 		incr_pattern(file_test_pattern, sizeof(file_test_pattern), 0x1);
@@ -223,7 +216,7 @@ static int littlefs_binary_file_adj(char *fname)
 		LOG_ERR("FAIL: write %s: %d", fname, rc);
 	}
 
- out:
+out:
 	ret = fs_close(&file);
 	if (ret < 0) {
 		LOG_ERR("FAIL: close %s: %d", fname, ret);
@@ -241,14 +234,12 @@ static int littlefs_flash_erase(unsigned int id)
 
 	rc = flash_area_open(id, &pfa);
 	if (rc < 0) {
-		LOG_ERR("FAIL: unable to find flash area %u: %d\n",
-			id, rc);
+		LOG_ERR("FAIL: unable to find flash area %u: %d\n", id, rc);
 		return rc;
 	}
 
-	LOG_PRINTK("Area %u at 0x%x on %s for %u bytes\n",
-		   id, (unsigned int)pfa->fa_off, pfa->fa_dev->name,
-		   (unsigned int)pfa->fa_size);
+	LOG_PRINTK("Area %u at 0x%x on %s for %u bytes\n", id, (unsigned int)pfa->fa_off,
+		   pfa->fa_dev->name, (unsigned int)pfa->fa_size);
 
 	/* Optional wipe flash contents */
 	if (IS_ENABLED(CONFIG_APP_WIPE_STORAGE)) {
@@ -263,7 +254,7 @@ static int littlefs_flash_erase(unsigned int id)
 
 #if DT_NODE_EXISTS(PARTITION_NODE)
 FS_FSTAB_DECLARE_ENTRY(PARTITION_NODE);
-#else /* PARTITION_NODE */
+#else  /* PARTITION_NODE */
 FS_LITTLEFS_DECLARE_DEFAULT_CONFIG(storage);
 static struct fs_mount_t lfs_storage_mnt = {
 	.type = FS_LITTLEFS,
@@ -273,13 +264,13 @@ static struct fs_mount_t lfs_storage_mnt = {
 };
 #endif /* PARTITION_NODE */
 
-	struct fs_mount_t *mountpoint =
+struct fs_mount_t *mountpoint =
 #if DT_NODE_EXISTS(PARTITION_NODE)
-		&FS_FSTAB_ENTRY(PARTITION_NODE)
+	&FS_FSTAB_ENTRY(PARTITION_NODE)
 #else
-		&lfs_storage_mnt
+	&lfs_storage_mnt
 #endif
-		;
+	;
 
 static int littlefs_mount(struct fs_mount_t *mp)
 {
@@ -291,12 +282,12 @@ static int littlefs_mount(struct fs_mount_t *mp)
 	}
 
 	/* Do not mount if auto-mount has been enabled */
-#if !DT_NODE_EXISTS(PARTITION_NODE) ||						\
+#if !DT_NODE_EXISTS(PARTITION_NODE) ||                                                             \
 	!(FSTAB_ENTRY_DT_MOUNT_FLAGS(PARTITION_NODE) & FS_MOUNT_FLAG_AUTOMOUNT)
 	rc = fs_mount(mp);
 	if (rc < 0) {
-		LOG_PRINTK("FAIL: mount id %" PRIuPTR " at %s: %d\n",
-		       (uintptr_t)mp->storage_dev, mp->mnt_point, rc);
+		LOG_PRINTK("FAIL: mount id %" PRIuPTR " at %s: %d\n", (uintptr_t)mp->storage_dev,
+			   mp->mnt_point, rc);
 		return rc;
 	}
 	LOG_PRINTK("%s mount: %d\n", mp->mnt_point, rc);
@@ -322,8 +313,7 @@ static int littlefs_mount(struct fs_mount_t *mp)
 #define DISK_NAME "NAND"
 #endif /* CONFIG_APP_LITTLEFS_STORAGE_BLK_FTL */
 
-#if defined(CONFIG_APP_LITTLEFS_STORAGE_BLK_SDMMC) || \
-	defined(CONFIG_APP_LITTLEFS_STORAGE_BLK_FTL)
+#if defined(CONFIG_APP_LITTLEFS_STORAGE_BLK_SDMMC) || defined(CONFIG_APP_LITTLEFS_STORAGE_BLK_FTL)
 
 struct fs_littlefs lfsfs;
 static struct fs_mount_t __mp = {
@@ -335,7 +325,7 @@ struct fs_mount_t *mountpoint = &__mp;
 
 static int littlefs_mount(struct fs_mount_t *mp)
 {
-	static const char *disk_mount_pt = "/"DISK_NAME":";
+	static const char *disk_mount_pt = "/" DISK_NAME ":";
 	static const char *disk_pdrv = DISK_NAME;
 
 	mp->storage_dev = (void *)disk_pdrv;
@@ -347,6 +337,7 @@ static int littlefs_mount(struct fs_mount_t *mp)
 
 int main(void)
 {
+	k_sleep(K_MSEC(5000));
 	char fname1[MAX_PATH_LEN];
 	char fname2[MAX_PATH_LEN];
 	struct fs_statvfs sbuf;
@@ -370,9 +361,7 @@ int main(void)
 
 	LOG_PRINTK("%s: bsize = %lu ; frsize = %lu ;"
 		   " blocks = %lu ; bfree = %lu\n",
-		   mountpoint->mnt_point,
-		   sbuf.f_bsize, sbuf.f_frsize,
-		   sbuf.f_blocks, sbuf.f_bfree);
+		   mountpoint->mnt_point, sbuf.f_bsize, sbuf.f_frsize, sbuf.f_blocks, sbuf.f_bfree);
 
 	rc = lsdir(mountpoint->mnt_point);
 	if (rc < 0) {
@@ -391,7 +380,7 @@ int main(void)
 	}
 
 out:
-	rc = fs_unmount(mountpoint);
+	// rc = fs_unmount(mountpoint);
 	LOG_PRINTK("%s unmount: %d\n", mountpoint->mnt_point, rc);
 	return 0;
 }

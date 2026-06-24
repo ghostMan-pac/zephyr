@@ -1,0 +1,24 @@
+// / {
+//     aliases {
+//         motor-left  = &pwm_left;
+//         motor-right = &pwm_right;
+//     };
+// };
+
+// &ledc0 {
+//     status = "okay";
+//     #pwm-cells = <3>;
+
+//     pwm_left: pwm_left {
+// 	reg = <0 12>;
+//         timer = <0>;
+//         channel = <0>;
+//         pin = <18>;   /* GPIO18 → left motor */
+//     };
+//     pwm_right: pwm_right {
+// 	reg = <0 12>;
+//         timer = <1>;
+//         channel = <1>;
+//         pin = <19>;   /* GPIO19 → right motor */
+//     };
+// };
