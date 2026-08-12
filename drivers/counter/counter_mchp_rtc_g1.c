@@ -20,7 +20,8 @@ LOG_MODULE_REGISTER(counter_mchp_rtc_g1, CONFIG_COUNTER_LOG_LEVEL);
 #define ALL_RTC_SYNC_BITS                 ((uint32_t)UINT32_MAX)
 #define COUNTER_RET_FAILED                (-1)
 #define COUNTER_RET_PASSED                (0)
-#define RTC_SYNCHRONIZATION_TIMEOUT_IN_US (5000U)
+#define RTC_SYNCHRONIZATION_TIMEOUT_IN_US (100000U)
+#define RTC_WAIT_CNT_TIMEOUT_IN_US        (200000U)
 #define DELAY_US                          (10U)
 
 struct mchp_counter_clock {
@@ -74,7 +75,7 @@ static void rtc_counter_wait_sync(const volatile uint32_t *sync_reg_addr, uint32
 				RTC_SYNCHRONIZATION_TIMEOUT_IN_US, k_busy_wait(DELAY_US));
 
 	if (!success) {
-		LOG_ERR("%s : Synchronization time-out occurred", __func__);
+		LOG_ERR("%s : Synchronization time-out occurred 0x%ls", __func__, sync_reg_addr);
 	}
 }
 
@@ -95,9 +96,8 @@ static void rtc_counter_wait_count_change(const void *regs, const uint32_t *coun
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
 
 		if ((p_regs->RTC_CTRLA & RTC_MODE0_CTRLA_ENABLE_Msk) != 0) {
-			bool success =
-				WAIT_FOR((*counter_value != p_regs->RTC_COUNT),
-					 RTC_SYNCHRONIZATION_TIMEOUT_IN_US, k_busy_wait(DELAY_US));
+			bool success = WAIT_FOR((*counter_value != p_regs->RTC_COUNT),
+						RTC_WAIT_CNT_TIMEOUT_IN_US, k_busy_wait(DELAY_US));
 			if (!success) {
 				LOG_ERR("%s : Synchronization time-out occurred %d", __func__,
 					max_bit_width);
@@ -156,8 +156,10 @@ static int32_t rtc_counter_init(const void *regs, uint32_t prescaler, const uint
 				    RTC_MODE0_CTRLA_COUNTSYNC(1U) |
 				    RTC_MODE0_CTRLA_PRESCALER(get_rtc_prescale_index(prescaler));
 
-		p_regs->RTC_COMP[0U] = UINT32_MAX;
-		p_regs->RTC_COMP[1U] = UINT32_MAX;
+		p_regs->RTC_COMP0 = UINT32_MAX;
+
+		// p_regs->RTC_COMP[0U] = UINT32_MAX;
+		// p_regs->RTC_COMP[1U] = UINT32_MAX;
 		p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_Msk;
 		rtc_counter_wait_sync(&p_regs->RTC_SYNCBUSY, ALL_RTC_SYNC_BITS);
 		break;
@@ -178,8 +180,9 @@ static int32_t rtc_counter_init(const void *regs, uint32_t prescaler, const uint
 		p_regs->RTC_PER = UINT16_MAX;
 		p_regs->RTC_COMP[0U] = UINT16_MAX;
 		p_regs->RTC_COMP[1U] = UINT16_MAX;
-		p_regs->RTC_COMP[2U] = UINT16_MAX;
-		p_regs->RTC_COMP[3U] = UINT16_MAX;
+		/*not available for cmjh01*/
+		// p_regs->RTC_COMP[2U] = UINT16_MAX;
+		// p_regs->RTC_COMP[3U] = UINT16_MAX;
 		p_regs->RTC_INTFLAG = RTC_MODE1_INTFLAG_Msk;
 		rtc_counter_wait_sync(&p_regs->RTC_SYNCBUSY, ALL_RTC_SYNC_BITS);
 		break;
@@ -350,7 +353,8 @@ static int32_t rtc_counter_set_period(const void *regs, const uint32_t period,
 	case COUNTER_BIT_MODE_32: {
 		rtc_mode0_registers_t *const p_regs =
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
-		p_regs->RTC_COMP[0] = period;
+		// p_regs->RTC_COMP[0] = period;
+		p_regs->RTC_COMP0 = period;
 		rtc_counter_wait_sync(&p_regs->RTC_SYNCBUSY, RTC_MODE0_SYNCBUSY_COMP0_Msk);
 		break;
 	}
@@ -379,7 +383,9 @@ static int32_t rtc_counter_get_period(const void *regs, uint32_t *period,
 	case COUNTER_BIT_MODE_32: {
 		rtc_mode0_registers_t *const p_regs =
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
-		*period = p_regs->RTC_COMP[0];
+		// *period = p_regs->RTC_COMP[0];
+		*period = p_regs->RTC_COMP0;
+
 		break;
 	}
 	case COUNTER_BIT_MODE_16: {
@@ -406,8 +412,9 @@ static int32_t rtc_counter_set_compare(const void *regs, const uint32_t chan_id,
 	case COUNTER_BIT_MODE_32: {
 		rtc_mode0_registers_t *const p_regs =
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
+		p_regs->RTC_COMP0 = compare_value;
 
-		p_regs->RTC_COMP[1u] = compare_value;
+		// p_regs->RTC_COMP[1u] = compare_value;
 		rtc_counter_wait_sync(&p_regs->RTC_SYNCBUSY, ALL_RTC_SYNC_BITS);
 		break;
 	}
@@ -466,7 +473,8 @@ static int32_t rtc_counter_alarm_irq_enable(const void *regs, const uint32_t cha
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
 
 		if (channel_id == 0u) {
-			p_regs->RTC_INTENSET = RTC_MODE0_INTFLAG_CMP1_Msk;
+			p_regs->RTC_INTENSET = RTC_MODE0_INTFLAG_CMP_Msk;
+			// p_regs->RTC_INTENSET = RTC_MODE0_INTFLAG_CMP1_Msk;
 		} else {
 			ret_status = COUNTER_RET_FAILED;
 		}
@@ -500,7 +508,8 @@ static int32_t rtc_counter_alarm_irq_disable(const void *regs, const uint32_t ch
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
 
 		if (channel_id == 0u) {
-			p_regs->RTC_INTENCLR = RTC_MODE0_INTFLAG_CMP1_Msk;
+			p_regs->RTC_INTENCLR = RTC_MODE0_INTFLAG_CMP_Msk;
+			// p_regs->RTC_INTENCLR = RTC_MODE0_INTFLAG_CMP1_Msk;
 		} else {
 			ret_status = COUNTER_RET_FAILED;
 		}
@@ -532,7 +541,8 @@ static int32_t rtc_counter_alarm_irq_clear(const void *regs, const uint32_t chan
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
 
 		if (channel_id == 0u) {
-			p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_CMP1_Msk;
+			p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_CMP_Msk;
+			// p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_CMP1_Msk;
 		} else {
 			ret_status = COUNTER_RET_FAILED;
 		}
@@ -562,8 +572,11 @@ static bool rtc_counter_alarm_irq_status(const uint32_t pending_irq_status,
 	switch (max_bit_width) {
 	case COUNTER_BIT_MODE_32: {
 		if (channel_id == 0u) {
-			ret_status = (bool)((pending_irq_status & RTC_MODE0_INTFLAG_CMP1_Msk) ==
-					    RTC_MODE0_INTFLAG_CMP1_Msk);
+			ret_status = (bool)((pending_irq_status & RTC_MODE0_INTFLAG_CMP_Msk) ==
+					    RTC_MODE0_INTFLAG_CMP_Msk);
+			// ret_status = (bool)((pending_irq_status & RTC_MODE0_INTFLAG_CMP1_Msk) ==
+			// 		    RTC_MODE0_INTFLAG_CMP1_Msk);
+
 		} else {
 			ret_status = false;
 		}
@@ -779,7 +792,7 @@ static int32_t counter_mchp_set_alarm(const struct device *const dev, const uint
 
 	/* Check if the requested tick value is less than top (period) value */
 	if (ticks > top_value) {
-		LOG_ERR("tick value is greater than top value");
+		LOG_ERR("tick value %d is greater than top value %d", ticks, top_value);
 		return -EINVAL;
 	}
 
