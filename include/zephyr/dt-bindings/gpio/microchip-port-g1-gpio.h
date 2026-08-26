@@ -29,7 +29,8 @@
  * @brief Enable the gpio to generate event
  *
  * Zephyr-specific devicetree flag for Microchip SoCs. When set in GPIO DT flags, the
- * driver enables the pin to be an event generator.
+ * driver enables the pin to be an event generator.inorder to use this flag, the interrupt configure
+ * api has to be called
  */
 #define MCHP_GPIO_EVGEN_ENABLE (1U << 7)
 // todo: could mask these bits with the kconfig symbol

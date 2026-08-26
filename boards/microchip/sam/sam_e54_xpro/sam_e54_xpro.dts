@@ -28,6 +28,7 @@
 
 	aliases {
 		led0 = &led0;
+		led1 = &led1;
 		pwm-led0 = &pwm_led1;
 		sw0 = &button0;
 		rtc = &rtc;
@@ -39,6 +40,10 @@
 
 		led0: led_0 {
 			gpios = <&portc 18 (GPIO_ACTIVE_HIGH | MCHP_GPIO_TGL_ON_EVENT)>;
+			label = "Yellow LED";
+		};
+		led1: led_1 {
+			gpios = <&portc 19 (GPIO_ACTIVE_HIGH | MCHP_GPIO_TGL_ON_EVENT)>;
 			label = "Yellow LED";
 		};
 	};
@@ -501,3 +506,8 @@ ext1_serial: &sercom0 {};
 ext2_serial: &sercom5 {};
 
 ext3_serial: &sercom1 {};
+
+
+// &evsys{
+// 	<1  EVSYS_MCHP_EVGEN_TCC1_OVF EVSYS_MCHP_EVUSER_PORT_EV0>;
+// }
