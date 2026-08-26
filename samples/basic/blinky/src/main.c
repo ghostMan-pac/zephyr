@@ -14,6 +14,7 @@
 #define SLEEP_TIME_MS 1000
 
 /* The devicetree node identifier for the "led0" alias. */
+#define LED1_NODE DT_ALIAS(led1)
 #define LED0_NODE DT_ALIAS(led0)
 #define SW0_NODE  DT_ALIAS(sw0)
 
@@ -22,6 +23,8 @@
  * See the sample documentation for information on how to fix this.
  */
 const struct device *evsys_dev = DEVICE_DT_GET(DT_ALIAS(evsys0));
+static const struct gpio_dt_spec led1 = GPIO_DT_SPEC_GET(LED1_NODE, gpios);
+
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 static const struct gpio_dt_spec button = GPIO_DT_SPEC_GET(SW0_NODE, gpios);
 
@@ -51,6 +54,11 @@ int main()
 	}
 
 	ret = gpio_pin_configure_dt(&led, GPIO_OUTPUT_ACTIVE);
+	if (ret < 0) {
+		return 0;
+	}
+
+	ret = gpio_pin_configure_dt(&led1, GPIO_OUTPUT_ACTIVE);
 	if (ret < 0) {
 		return 0;
 	}

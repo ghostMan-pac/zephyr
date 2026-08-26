@@ -19,4 +19,6 @@ int evsys_mchp_connect_channel_to_evgen(const struct device *dev, uint8_t channe
 int evsys_mchp_connect_user_to_channel(const struct device *dev, uint8_t channel_num,
 				       int user_offset);
 
+//TODO: add an api for manually triggering an event for a channel
+
 #endif /* ZEPHYR_DRIVERS_MISC_MCHP_EVSYS_MCHP_EVSYS_G1_H_ */

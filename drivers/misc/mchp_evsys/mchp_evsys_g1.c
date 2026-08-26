@@ -152,7 +152,6 @@ int evsys_mchp_connect_user_to_channel(const struct device *dev, uint8_t channel
 			    DEVICE_DT_INST_GET(n), 0);                                            \
 		irq_enable(DT_INST_IRQN(n));                                                      \
 	}                                                                                          
-                                                                                                   
-	
+
 /* clang-format on*/
 DT_INST_FOREACH_STATUS_OKAY(EVSYS_MCHP_INIT)

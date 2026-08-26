@@ -839,10 +839,10 @@ static int pwm_mchp_init(const struct device *pwm_dev)
 		return ret_val;
 	}
 	ret_val = tc_init(mchp_pwm_cfg);
-	void *pwm_reg = mchp_pwm_cfg->regs;
-	pwm_irq_connect_0();
-	PWM_MODE16(pwm_reg)->TC_INTENCLR = 0XFF;
-	PWM_MODE16(pwm_reg)->TC_INTENSET = TC_INTENSET_MC1_Msk;
+	// void *pwm_reg = mchp_pwm_cfg->regs;
+	// pwm_irq_connect_0();
+	// PWM_MODE16(pwm_reg)->TC_INTENCLR = 0XFF;
+	// PWM_MODE16(pwm_reg)->TC_INTENSET = TC_INTENSET_MC1_Msk;
 	ret_val = (ret_val == -EALREADY) ? 0 : ret_val;
 
 	return ret_val;

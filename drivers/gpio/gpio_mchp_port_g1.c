@@ -324,7 +324,6 @@ static int gpio_configure_output(port_group_registers_t *gpio_reg, gpio_pin_t pi
 	return retval;
 }
 #ifdef CONFIG_MCHP_EVSYS_G1
-
 int gpio_evctrl_config(const struct device *dev, gpio_pin_t pin, gpio_flags_t flags)
 {
 	const struct gpio_mchp_config *config = dev->config;
@@ -342,6 +341,7 @@ int gpio_evctrl_config(const struct device *dev, gpio_pin_t pin, gpio_flags_t fl
 		}
 	}
 	if (free_event_pin >= PORT_EV_NUM) {
+		//todo: add error log here
 		return -EBUSY;
 	}
 
@@ -371,13 +371,14 @@ int gpio_evctrl_config(const struct device *dev, gpio_pin_t pin, gpio_flags_t fl
 	if (ret_val < 0) {
 		return ret_val;
 	}
-	/*the multiplying and shifting is done so that the value of evctrl_cfg_val will be kept in
+	/* the multiplying and shifting is done so that the value of evctrl_cfg_val will be kept in
 	 * respective input event pin's location inside the 32 bit register
 	 */
 	val32 = gpio_reg->PORT_EVCTRL;
 	val32 &= ~(UINT8_MAX << (free_event_pin * 8));
 	val32 |= (evctrl_cfg.val << (free_event_pin * 8));
 	gpio_reg->PORT_EVCTRL = val32;
+	
 	data->input_event_pin |= BIT(free_event_pin);
 	printf("evctrl val : 0x%x", evctrl_cfg.val);
 	return 0;
