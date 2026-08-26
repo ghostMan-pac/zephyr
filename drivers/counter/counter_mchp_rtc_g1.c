@@ -75,7 +75,7 @@ static void rtc_counter_wait_sync(const volatile uint32_t *sync_reg_addr, uint32
 				RTC_SYNCHRONIZATION_TIMEOUT_IN_US, k_busy_wait(DELAY_US));
 
 	if (!success) {
-		LOG_ERR("%s : Synchronization time-out occurred 0x%ls", __func__, sync_reg_addr);
+		LOG_ERR("%s : Synchronization time-out occurred ", __func__);
 	}
 }
 
@@ -152,14 +152,18 @@ static int32_t rtc_counter_init(const void *regs, uint32_t prescaler, const uint
 		p_regs->RTC_CTRLA = RTC_MODE0_CTRLA_SWRST_Msk;
 		rtc_counter_wait_sync(&p_regs->RTC_SYNCBUSY, RTC_MODE0_SYNCBUSY_SWRST_Msk);
 
-		p_regs->RTC_CTRLA = RTC_MODE0_CTRLA_MODE(0U) | RTC_MODE0_CTRLA_MATCHCLR(1U) |
+		p_regs->RTC_CTRLA = RTC_MODE0_CTRLA_MODE(0U) | RTC_MODE0_CTRLA_MATCHCLR(0U) |
 				    RTC_MODE0_CTRLA_COUNTSYNC(1U) |
 				    RTC_MODE0_CTRLA_PRESCALER(get_rtc_prescale_index(prescaler));
 
 		p_regs->RTC_COMP0 = UINT32_MAX;
-
+		// match clear is an important bit.
+		//  the top value is changing for each alarm
+		//  there is just COMP0 for both checking the tick value as well as the period
+		//  value. there seems to be somee issue there. check without mathc clear test in
+		//  pic32cx sg as well this same scenario
 		// p_regs->RTC_COMP[0U] = UINT32_MAX;
-		// p_regs->RTC_COMP[1U] = UINT32_MAX;
+		//  p_regs->RTC_COMP[1U] = UINT32_MAX;
 		p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_Msk;
 		rtc_counter_wait_sync(&p_regs->RTC_SYNCBUSY, ALL_RTC_SYNC_BITS);
 		break;

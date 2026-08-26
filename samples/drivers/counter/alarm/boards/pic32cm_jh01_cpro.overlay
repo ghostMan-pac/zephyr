@@ -6,8 +6,8 @@
 
 / {
 	aliases {
-		counter = &rtc;
-		// counter = &tcc1;
+		// counter = &rtc;
+		counter = &tcc1;
 	};
 };
 
