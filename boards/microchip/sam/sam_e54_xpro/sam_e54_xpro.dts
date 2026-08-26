@@ -28,7 +28,8 @@
 
 	aliases {
 		led0 = &led0;
-		pwm-led0 = &pwm_led0;
+		led1 = &led1;
+		pwm-led0 = &pwm_led1;
 		sw0 = &button0;
 		rtc = &rtc;
 		sdhc0 = &sdhc1;
@@ -38,7 +39,12 @@
 		compatible = "gpio-leds";
 
 		led0: led_0 {
-			gpios = <&portc 18 GPIO_ACTIVE_LOW>;
+			gpios = <&portc 18 (GPIO_ACTIVE_HIGH | MCHP_GPIO_TGL_ON_EVENT)>;
+			label = "Yellow LED";
+		};
+
+		led1: led_1 {
+			gpios = <&portc 19 (GPIO_ACTIVE_HIGH | MCHP_GPIO_TGL_ON_EVENT)>;
 			label = "Yellow LED";
 		};
 	};
@@ -50,13 +56,18 @@
 			status = "okay";
 			pwms = <&tcc0 2 PWM_MSEC(20) 0>;
 		};
+
+		pwm_led1: pwm_led_1 {
+			status = "okay";
+			pwms = <&tc0 1 PWM_MSEC(1) 0>;
+		};
 	};
 
 	buttons {
 		compatible = "gpio-keys";
 
 		button0: button_0 {
-			gpios = <&portb 31 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			gpios = <&portb 31 (GPIO_PULL_UP | GPIO_ACTIVE_HIGH | MCHP_GPIO_EVGEN_ENABLE)>;
 			label = "SW0";
 			zephyr,code = <INPUT_KEY_0>;
 		};
@@ -425,8 +436,9 @@
 	#pwm-cells = <3>;
 	pinctrl-0 = <&tc0_pwm_default>;
 	pinctrl-names = "default";
-	max-bit-width = <32>;
-	prescaler = <1>;
+	max-bit-width = <16>;
+	prescaler = <256>;
+	status = "okay";
 };
 
 &portb {
@@ -442,6 +454,7 @@
 	prescaler = <4>;
 	pinctrl-0 = <&adc0_default>;
 	pinctrl-names = "default";
+	status = "disabled";
 };
 
 &adc1 {
@@ -497,8 +510,19 @@
 	status = "okay";
 };
 
+&evsys {
+	status = "okay";
+	evgen0 {
+		channel = <0>;
+		event-generator = <EVSYS_MCHP_EVGEN_EIC_EXTINT15>;
+		event-users = <EVSYS_MCHP_EVUSER_PORT_EV0>;
+	};
+};
+
 ext1_serial: &sercom0 {};
 
 ext2_serial: &sercom5 {};
 
 ext3_serial: &sercom1 {};
+
+
