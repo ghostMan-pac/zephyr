@@ -24,7 +24,8 @@ properties:
       - "OSC32K"
       - "XOSC1K"
       - "XOSC32K"
-    default: "ULP1K"
+    # default: "ULP1K"
+    default: "XOSC32K"
     description: |
       RTC source clock selection
 

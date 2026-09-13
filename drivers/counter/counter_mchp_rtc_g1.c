@@ -153,7 +153,7 @@ static int32_t rtc_counter_init(const void *regs, uint32_t prescaler, const uint
 		rtc_counter_wait_sync(&p_regs->RTC_SYNCBUSY, RTC_MODE0_SYNCBUSY_SWRST_Msk);
 
 #ifdef CONFIG_SOC_FAMILY_MICROCHIP_PIC32CM_JH
-		p_regs->RTC_CTRLA = RTC_MODE0_CTRLA_MODE(0U) | RTC_MODE0_CTRLA_MATCHCLR(0U) |
+		p_regs->RTC_CTRLA = RTC_MODE0_CTRLA_MODE(0U) | RTC_MODE0_CTRLA_MATCHCLR(1U) |
 				    RTC_MODE0_CTRLA_COUNTSYNC(1U) |
 				    RTC_MODE0_CTRLA_PRESCALER(get_rtc_prescale_index(prescaler));
 		p_regs->RTC_COMP0 = UINT32_MAX;
@@ -572,7 +572,7 @@ static int32_t rtc_counter_alarm_irq_clear(const void *regs, const uint32_t chan
 
 		if (channel_id == 0u) {
 #ifdef CONFIG_SOC_FAMILY_MICROCHIP_PIC32CM_JH
-			p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_CMP_Msk;
+			p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_CMP_Msk | RTC_MODE0_INTFLAG_OVF_Msk;
 #else
 			p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_CMP1_Msk;
 #endif /* CONFIG_SOC_FAMILY_MICROCHIP_PIC32CM_JH */
@@ -670,7 +670,7 @@ static int32_t rtc_counter_top_irq_disable(const void *regs, const uint32_t max_
 		rtc_mode0_registers_t *const p_regs =
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
 
-		p_regs->RTC_INTENCLR = RTC_MODE0_INTFLAG_CMP0_Msk;
+		p_regs->RTC_INTENCLR = RTC_MODE0_INTFLAG_CMP0_Msk | RTC_MODE0_INTFLAG_OVF_Msk;
 		break;
 	}
 	case COUNTER_BIT_MODE_16: {
@@ -698,7 +698,7 @@ static int32_t rtc_counter_top_irq_clear(const void *regs, const uint32_t max_bi
 		rtc_mode0_registers_t *const p_regs =
 			(rtc_mode0_registers_t *const)(&(((rtc_registers_t *)regs)->MODE0));
 
-		p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_CMP0_Msk;
+		p_regs->RTC_INTFLAG = RTC_MODE0_INTFLAG_CMP0_Msk | RTC_MODE0_INTFLAG_OVF_Msk;
 		break;
 	}
 	case COUNTER_BIT_MODE_16: {
@@ -826,6 +826,10 @@ static int32_t counter_mchp_set_alarm(const struct device *const dev, const uint
 	/* Get top value */
 	rtc_counter_get_period(cfg->regs, &top_value, cfg->max_bit_width);
 	__ASSERT_NO_MSG(data->guard_period < top_value);
+	top_value = 0xfffffff;
+	// todo: start from here, check the top value and guard period logic. somehow top value is
+	// being set as 33 .top value is derived from comp0
+	// general purpose register seems to be promising. try out a method using that
 
 	/* Check if the requested tick value is less than top (period) value */
 	if (ticks > top_value) {
